@@ -4,11 +4,7 @@
 
 ![FinanceAI Screenshot](./docs/screenshot.png)
 
----
 
-## 🚀 Live Demo
-- **Frontend**: Deploy to [Vercel](https://vercel.com) or [Netlify](https://netlify.com)
-- **Backend**: Deploy to [Render](https://render.com) or [Railway](https://railway.app)
 
 ---
 
