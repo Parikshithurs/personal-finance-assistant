@@ -13,5 +13,5 @@ node_modules/
 # OS
 .DS_Store
 
-# Keep trained ML model (needed for deployment)
-!backend/model/expense_model.pkl
+# ML Model (regenerated on each server — do NOT commit)
+*.pkl
