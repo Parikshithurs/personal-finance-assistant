@@ -1,8 +1,10 @@
-// App.js - Main application component with tab-based navigation
+// App.js - Main application component with authentication gate
 import React, { useState, useEffect, useCallback } from 'react';
 import { Toaster } from 'react-hot-toast';
 import './index.css';
 
+import { AuthProvider, useAuth } from './AuthContext';
+import LoginPage from './components/LoginPage';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import Charts from './components/Charts';
@@ -20,25 +22,21 @@ const NAV_ITEMS = [
   { id: 'alerts', label: 'Alerts', icon: '🔔' },
 ];
 
-function App() {
+// ─── Inner app (only rendered when authenticated) ────────────────
+function MainApp() {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [alertCount, setAlertCount] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Refresh child components when data changes
-  const triggerRefresh = useCallback(() => {
-    setRefreshKey(k => k + 1);
-  }, []);
+  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  // Poll alert count every 30 seconds
   useEffect(() => {
     const fetchAlertCount = async () => {
       try {
         const res = await getAlerts();
         setAlertCount(res.data.alerts?.length || 0);
-      } catch {
-        /* backend may not be running yet */
-      }
+      } catch { /* backend may not be running yet */ }
     };
     fetchAlertCount();
     const interval = setInterval(fetchAlertCount, 30000);
@@ -47,8 +45,7 @@ function App() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard refreshKey={refreshKey} onNavigate={setActiveTab} />;
+      case 'dashboard': return <Dashboard refreshKey={refreshKey} onNavigate={setActiveTab} />;
       case 'expenses':
         return (
           <div className="grid-left-heavy fade-in">
@@ -56,37 +53,20 @@ function App() {
             <ExpenseList refreshKey={refreshKey} />
           </div>
         );
-      case 'charts':
-        return <Charts refreshKey={refreshKey} />;
-      case 'budget':
-        return <BudgetForm onBudgetSet={triggerRefresh} refreshKey={refreshKey} />;
-      case 'alerts':
-        return <Alerts refreshKey={refreshKey} />;
-      default:
-        return null;
+      case 'charts': return <Charts refreshKey={refreshKey} />;
+      case 'budget': return <BudgetForm onBudgetSet={triggerRefresh} refreshKey={refreshKey} />;
+      case 'alerts': return <Alerts refreshKey={refreshKey} />;
+      default: return null;
     }
   };
 
+  // User initials for avatar
+  const initials = user?.username
+    ? user.username.slice(0, 2).toUpperCase()
+    : '??';
+
   return (
     <div className="app">
-      {/* Toast Notifications */}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: 'var(--bg-elevated)',
-            color: 'var(--text-primary)',
-            border: '1px solid var(--border)',
-            borderRadius: '10px',
-            fontSize: '0.875rem',
-            fontFamily: 'Inter, sans-serif',
-          },
-          success: { iconTheme: { primary: '#06d6a0', secondary: '#fff' } },
-          error: { iconTheme: { primary: '#ff5e7d', secondary: '#fff' } },
-        }}
-      />
-
-      {/* Header */}
       <header className="header">
         <div className="header-inner">
           {/* Logo */}
@@ -97,7 +77,7 @@ function App() {
 
           {/* Navigation */}
           <nav className="nav">
-            {NAV_ITEMS.map(item => (
+            {NAV_ITEMS.map((item) => (
               <button
                 key={item.id}
                 className={`nav-btn ${activeTab === item.id ? 'active' : ''}`}
@@ -107,34 +87,39 @@ function App() {
                 <span>{item.icon}</span>
                 <span>{item.label}</span>
                 {item.id === 'alerts' && alertCount > 0 && (
-                  <span style={{
-                    background: 'var(--danger)',
-                    color: '#fff',
-                    borderRadius: '10px',
-                    padding: '1px 6px',
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    minWidth: '18px',
-                    textAlign: 'center',
-                  }}>
-                    {alertCount}
-                  </span>
+                  <span className="alert-badge">{alertCount}</span>
                 )}
               </button>
             ))}
           </nav>
 
-          {/* Live status */}
-          <div className="header-meta">
+          {/* User area */}
+          <div className="header-user-area">
+            {/* Live badge */}
             <div className="live-badge">
               <span className="live-dot" />
               LIVE
             </div>
+
+            {/* Avatar + username */}
+            <div className="user-chip">
+              <div className="user-avatar">{initials}</div>
+              <span className="user-name">{user?.username || 'User'}</span>
+            </div>
+
+            {/* Logout button */}
+            <button
+              id="btn-logout"
+              className="btn-logout"
+              onClick={logout}
+              title="Sign out"
+            >
+              Sign Out
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="main">
         {renderContent()}
       </main>
@@ -142,4 +127,45 @@ function App() {
   );
 }
 
-export default App;
+// ─── Root App: wraps everything with AuthProvider + single Toaster ─
+function AppRouter() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="splash-screen">
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>💰</div>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  return user ? <MainApp /> : <LoginPage />;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      {/* Single Toaster at root so toasts survive page transitions */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#1e2040',
+            color: '#f0f0ff',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '10px',
+            fontSize: '0.875rem',
+            fontFamily: 'Inter, sans-serif',
+          },
+          success: { iconTheme: { primary: '#06d6a0', secondary: '#fff' } },
+          error: { iconTheme: { primary: '#ff5e7d', secondary: '#fff' } },
+        }}
+      />
+      <AppRouter />
+    </AuthProvider>
+  );
+}
