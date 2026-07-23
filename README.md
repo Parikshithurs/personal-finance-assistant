@@ -2,10 +2,6 @@
 
 > An AI-powered, full-stack personal finance tracker built with **React**, **Flask**, and **Scikit-learn**. Automatically categorizes expenses using Machine Learning, tracks budgets, and sends smart alerts.
 
-![FinanceAI Screenshot](./docs/screenshot.png)
-
-
-
 ---
 
 ## 🧠 Features
