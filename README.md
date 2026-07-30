@@ -202,7 +202,6 @@ curl -X POST http://localhost:5000/budget \
 
 ---
 
-## 👨‍💻 Author
 
 Built as an academic/portfolio project demonstrating full-stack ML integration.
 
