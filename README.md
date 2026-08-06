@@ -208,3 +208,7 @@ Built as an academic/portfolio project demonstrating full-stack ML integration.
 - **Frontend**: React + Recharts + Custom CSS
 - **Backend**: Flask + Scikit-learn + SQLite
 - **ML**: TF-IDF Vectorization + Multinomial Naive Bayes
+
+  
+Author 
+Parikshith Urs K
